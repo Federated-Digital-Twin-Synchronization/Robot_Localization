@@ -1,0 +1,8 @@
+prefix=/root/catkin_ws/src/Robot_Localization/catkin_ws/install
+
+Name: my_velodyne_package
+Description: Description of my_velodyne_package
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

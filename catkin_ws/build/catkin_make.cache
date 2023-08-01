@@ -1,0 +1,2 @@
+my_velodyne_package
+-DCATKIN_DEVEL_PREFIX=/root/catkin_ws/src/Robot_Localization/catkin_ws/devel -DCMAKE_INSTALL_PREFIX=/root/catkin_ws/src/Robot_Localization/catkin_ws/install -G Unix Makefiles
