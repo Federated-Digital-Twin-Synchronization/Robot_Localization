@@ -98,11 +98,11 @@ class HelloWorld(BaseSample):
         self._world.add_physics_callback("sending_actions", callback_fn=self.update_robot_pose_rotation)
         return
 
-    def update_robot_pose_rotation(self,hi):
+    def update_robot_pose_rotation(self, hi):
         # Poll for Kafka messages
         partitions = self.odom_consumer.partitions_for_topic(self.topic)
-        last_offsets = {p: offset-1 for p in partitions for offset in self.odom_consumer.end_offsets([TopicPartition(self.topic, p)]).values()}
-        
+        last_offsets = {p: offset - 1 for p in partitions for offset in self.odom_consumer.end_offsets([TopicPartition(self.topic, p)]).values()}
+
         for p, last_offset in last_offsets.items():
             start_offset = max(0, last_offset - 1 + 1)
             tp = TopicPartition(self.topic, p)
@@ -117,15 +117,21 @@ class HelloWorld(BaseSample):
                     print("Received message: {}".format(message.value))
                     decoded_message = message.value.decode('utf-8')  # Decode the bytes to string
                     data = json.loads(decoded_message)  # Convert the JSON string to a dictionary
-                    
-                    # need to update heading! 
-                    x = data['x']
-                    y = data['y']
+
+                    # Retrieve position and orientation
+                    x = data['position']['x']
+                    y = data['position']['y']
+                    orientation = data['orientation']
+                    q_x = orientation['x']
+                    q_y = orientation['y']
+                    q_z = orientation['z']
+                    q_w = orientation['w']
+
                     execute(
                         "IsaacSimTeleportPrim",
                         prim_path="/World/scout_v2",
                         translation=(x, y, 0.27119),
-                        rotation=(0, 0, 0, 1),
+                        rotation=(q_x, q_y, q_z, q_w),
                     )
         else:
             print("No message received within timeout period")
