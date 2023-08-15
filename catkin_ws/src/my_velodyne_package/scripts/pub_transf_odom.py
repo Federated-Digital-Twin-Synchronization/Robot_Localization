@@ -6,7 +6,32 @@ from kafka import KafkaProducer
 import json
 from scipy.spatial.transform import Rotation
 import numpy as np
+def quat_to_euler(q):
+    # Ensure the quaternion array is of shape (4,)
+    q = np.array(q).flatten()
+    qw, qx, qy, qz = q
 
+    # Calculate Euler angles
+    roll = np.arctan2(2*(qw*qx + qy*qz), 1 - 2*(qx**2 + qy**2))
+    pitch = np.arcsin(2*(qw*qy - qz*qx))
+    yaw = np.arctan2(2*(qw*qz + qx*qy), 1 - 2*(qy**2 + qz**2))
+
+    return roll, pitch, yaw
+
+def euler_to_quat(roll, pitch, yaw):
+    cr = np.cos(roll * 0.5)
+    sr = np.sin(roll * 0.5)
+    cp = np.cos(pitch * 0.5)
+    sp = np.sin(pitch * 0.5)
+    cy = np.cos(yaw * 0.5)
+    sy = np.sin(yaw * 0.5)
+
+    qw = cr * cp * cy + sr * sp * sy
+    qx = sr * cp * cy - cr * sp * sy
+    qy = cr * sp * cy + sr * cp * sy
+    qz = cr * cp * sy - sr * sp * cy
+
+    return qw, qx, qy, qz
 class ListenerNode:
     def __init__(self):
         rospy.init_node('listener', anonymous=True)
@@ -47,9 +72,16 @@ class ListenerNode:
         return trans_pos, q_B
 
     def transform_orientation(self, q_A):
-        rotation_A = Rotation.from_quat(q_A)
-        rotation_matrix_A = rotation_A.as_matrix()
-        return self.loaded_homograpy_mat[:2, :2] @ rotation_matrix_A[:2, :2]
+        # Convert quaternion to Euler angles
+        roll_A, pitch_A, yaw_A = quat_to_euler(q_A)
+
+        # Applying 2D transformation to yaw angle (Z-angle)
+        theta_B = self.loaded_homograpy_mat[0, 0] * yaw_A + self.loaded_homograpy_mat[0, 1]
+
+        # Convert back to quaternion
+        q_B = euler_to_quat(roll_A, pitch_A, theta_B)
+
+        return q_B
 
     def transform_point(self, pt):
         h_pt = np.append(pt, 1)  # Homogeneous coordinates
